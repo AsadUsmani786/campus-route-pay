@@ -2,85 +2,6 @@
 import { useEffect, useState, useRef } from "react";
 import { MapPin, Bus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default markers in react-leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom bus icon
-const busIcon = new L.DivIcon({
-  html: `
-    <div style="
-      background: #3b82f6;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    ">
-      <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-      </svg>
-    </div>
-  `,
-  className: 'custom-bus-icon',
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
-});
-
-// Custom stop icons
-const currentStopIcon = new L.DivIcon({
-  html: `
-    <div style="
-      background: #10b981;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    "></div>
-  `,
-  className: 'custom-stop-icon',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
-
-const stopIcon = new L.DivIcon({
-  html: `
-    <div style="
-      background: #6b7280;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    "></div>
-  `,
-  className: 'custom-stop-icon',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
-
-// Component to handle map center updates
-const MapController = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-  
-  return null;
-};
 
 const BusMap = () => {
   // Mock bus location data - in a real app, this would come from your backend
@@ -114,49 +35,15 @@ const BusMap = () => {
   
   return (
     <div className="space-y-4">
-      <div className="relative h-96 w-full overflow-hidden rounded-lg">
-        <MapContainer
-          center={[busLocation.lat, busLocation.lng]}
-          zoom={14}
-          className="h-full w-full"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          <MapController center={[busLocation.lat, busLocation.lng]} />
-          
-          {/* Bus marker */}
-          <Marker 
-            position={[busLocation.lat, busLocation.lng]} 
-            icon={busIcon}
-          >
-            <Popup>
-              <div>
-                <h3 className="font-semibold">Bus Location</h3>
-                <p className="text-sm">Currently at Main Road Junction</p>
-                <p className="text-xs text-muted-foreground">ETA: ~15 minutes</p>
-              </div>
-            </Popup>
-          </Marker>
-
-          {/* Route stops */}
-          {stops.map((stop, index) => (
-            <Marker
-              key={index}
-              position={[stop.lat, stop.lng]}
-              icon={index === 1 ? currentStopIcon : stopIcon}
-            >
-              <Popup>
-                <div>
-                  <h3 className="font-semibold">{stop.name}</h3>
-                  {index === 1 && <p className="text-sm text-green-600">Current Stop</p>}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+      <div className="relative h-96 w-full overflow-hidden rounded-lg bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+            <Bus className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Bus Tracking</h3>
+          <p className="text-sm text-muted-foreground">Map functionality temporarily disabled</p>
+          <p className="text-xs text-muted-foreground mt-1">Bus location updates every 5 seconds</p>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -180,6 +67,24 @@ const BusMap = () => {
           <div>
             <p className="text-xs text-muted-foreground">Destination</p>
             <p className="text-sm">North Campus</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-card/30 p-4 rounded-md">
+        <h4 className="font-semibold mb-2">Live Bus Status</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Current Position:</span>
+            <span>{busLocation.lat.toFixed(4)}, {busLocation.lng.toFixed(4)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Heading:</span>
+            <span>{Math.round(busLocation.heading)}°</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Status:</span>
+            <span className="text-green-500">Active</span>
           </div>
         </div>
       </div>
