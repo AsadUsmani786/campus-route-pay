@@ -21,11 +21,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['leaflet', 'react-leaflet']
+    include: ['leaflet', 'react-leaflet'],
+    exclude: []
   },
   build: {
     rollupOptions: {
       external: mode === 'development' ? [] : [],
     },
+  },
+  define: {
+    global: 'globalThis',
   },
 }));

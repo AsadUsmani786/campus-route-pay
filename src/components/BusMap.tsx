@@ -1,82 +1,23 @@
 import { useEffect, useState, useRef } from "react";
 import { MapPin, Bus } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
-// Fix for default markers in react-leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom bus icon
-const busIcon = new L.DivIcon({
-  html: `
-    <div style="
-      background: #3b82f6;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    ">
-      <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-      </svg>
-    </div>
-  `,
-  className: 'custom-bus-icon',
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
-});
-
-// Custom stop icons
-const startStopIcon = new L.DivIcon({
-  html: `
-    <div style="
-      background: #10b981;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    "></div>
-  `,
-  className: 'custom-stop-icon',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
-
-const destinationStopIcon = new L.DivIcon({
-  html: `
-    <div style="
-      background: #ef4444;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    "></div>
-  `,
-  className: 'custom-stop-icon',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
+// Dynamic imports to handle potential SSR issues
+let MapContainer: any;
+let TileLayer: any;
+let Marker: any;
+let Popup: any;
+let Polyline: any;
+let L: any;
 
 const BusMap = () => {
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [busLocation, setBusLocation] = useState([23.391768, 85.382955] as [number, number]);
+  const mapRef = useRef<HTMLDivElement>(null);
+
   // Fixed coordinates for the locations
   const centralCampus = [23.413359, 85.441085] as [number, number];
   const initialBusLocation = [23.391768, 85.382955] as [number, number];
   const northCampus = [23.370177, 85.324825] as [number, number];
-  
-  // Mock bus location data - in a real app, this would come from your backend
-  const [busLocation, setBusLocation] = useState(initialBusLocation);
   
   // Route stops
   const stops = [
@@ -89,6 +30,42 @@ const BusMap = () => {
   const routePath = [centralCampus, initialBusLocation, northCampus];
 
   useEffect(() => {
+    const loadLeaflet = async () => {
+      try {
+        // Import leaflet and react-leaflet dynamically
+        const leafletModule = await import('leaflet');
+        const reactLeafletModule = await import('react-leaflet');
+        
+        L = leafletModule.default;
+        MapContainer = reactLeafletModule.MapContainer;
+        TileLayer = reactLeafletModule.TileLayer;
+        Marker = reactLeafletModule.Marker;
+        Popup = reactLeafletModule.Popup;
+        Polyline = reactLeafletModule.Polyline;
+
+        // Import CSS
+        await import('leaflet/dist/leaflet.css');
+
+        // Fix for default markers in react-leaflet
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        });
+
+        setMapLoaded(true);
+      } catch (error) {
+        console.error('Failed to load leaflet:', error);
+      }
+    };
+
+    loadLeaflet();
+  }, []);
+
+  useEffect(() => {
+    if (!mapLoaded) return;
+
     // Simulate bus movement along the route every 5 seconds
     const moveBus = () => {
       setBusLocation(prev => {
@@ -106,7 +83,113 @@ const BusMap = () => {
 
     const interval = setInterval(moveBus, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mapLoaded]);
+
+  // Custom bus icon
+  const busIcon = mapLoaded ? new L.DivIcon({
+    html: `
+      <div style="
+        background: #3b82f6;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      ">
+        <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </div>
+    `,
+    className: 'custom-bus-icon',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  }) : null;
+
+  // Custom stop icons
+  const startStopIcon = mapLoaded ? new L.DivIcon({
+    html: `
+      <div style="
+        background: #10b981;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      "></div>
+    `,
+    className: 'custom-stop-icon',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  }) : null;
+
+  const destinationStopIcon = mapLoaded ? new L.DivIcon({
+    html: `
+      <div style="
+        background: #ef4444;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      "></div>
+    `,
+    className: 'custom-stop-icon',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  }) : null;
+
+  if (!mapLoaded) {
+    return (
+      <div className="space-y-4">
+        <div className="relative h-96 w-full overflow-hidden rounded-lg my-5 bg-card/30 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading map...</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center bg-card/30 p-3 rounded-md">
+            <MapPin className="h-5 w-5 text-primary mr-2" />
+            <div>
+              <p className="text-xs text-muted-foreground">Starting point</p>
+              <p className="text-sm">Central Campus</p>
+            </div>
+          </div>
+          <div className="flex items-center bg-primary/20 p-3 rounded-md">
+            <Bus className="h-5 w-5 text-primary mr-2" />
+            <div>
+              <p className="text-xs text-muted-foreground">Current location</p>
+              <p className="text-sm">Main Road Junction</p>
+              <p className="text-xs text-muted-foreground">ETA: ~15 minutes</p>
+            </div>
+          </div>
+          <div className="flex items-center bg-card/30 p-3 rounded-md">
+            <MapPin className="h-5 w-5 text-primary mr-2" />
+            <div>
+              <p className="text-xs text-muted-foreground">Destination</p>
+              <p className="text-sm">North Campus</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-card/30 p-4 rounded-md">
+          <h4 className="font-semibold mb-2">Live Bus Status</h4>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Current Position:</span>
+              <span>{busLocation[0].toFixed(4)}, {busLocation[1].toFixed(4)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Status:</span>
+              <span className="text-green-500">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4">
