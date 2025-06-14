@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { MapPin, Bus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,11 +15,12 @@ const BusMap = () => {
   const bitMesra = [23.413359, 85.441085] as [number, number];
   const initialBusLocation = [23.391768, 85.382955] as [number, number];
   
-  // Destination options with coordinates
+  // Destination options with updated coordinates
   const destinations = {
     firayalal: { name: "Firayalal", coords: [23.370177, 85.324825] as [number, number] },
-    doranda: { name: "Doranda", coords: [23.344167, 85.309722] as [number, number] },
-    sujataChowk: { name: "Sujata Chowk", coords: [23.354722, 85.335278] as [number, number] }
+    doranda: { name: "Doranda", coords: [23.339368, 85.319086] as [number, number] },
+    sujataChowk: { name: "Sujata Chowk", coords: [23.353829, 85.324410] as [number, number] },
+    lalpur: { name: "Lalpur", coords: [23.372127, 85.338252] as [number, number] }
   };
 
   const currentDestination = destinations[selectedDestination as keyof typeof destinations];
@@ -218,6 +218,7 @@ const BusMap = () => {
             <SelectItem value="firayalal">Firayalal</SelectItem>
             <SelectItem value="doranda">Doranda</SelectItem>
             <SelectItem value="sujataChowk">Sujata Chowk</SelectItem>
+            <SelectItem value="lalpur">Lalpur</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -238,20 +239,12 @@ const BusMap = () => {
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex items-center bg-card/30 p-3 rounded-md">
           <MapPin className="h-5 w-5 text-primary mr-2" />
           <div>
             <p className="text-xs text-muted-foreground">Starting point</p>
             <p className="text-sm">Bit Mesra</p>
-          </div>
-        </div>
-        <div className="flex items-center bg-primary/20 p-3 rounded-md">
-          <Bus className="h-5 w-5 text-primary mr-2" />
-          <div>
-            <p className="text-xs text-muted-foreground">Current location</p>
-            <p className="text-sm">Main Road Junction</p>
-            <p className="text-xs text-muted-foreground">ETA: ~15 minutes</p>
           </div>
         </div>
         <div className="flex items-center bg-card/30 p-3 rounded-md">
@@ -277,6 +270,10 @@ const BusMap = () => {
           <div className="flex justify-between text-sm">
             <span>Status:</span>
             <span className="text-green-500">{mapLoaded ? 'Active' : 'Loading...'}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>ETA:</span>
+            <span className="text-blue-500">~15 minutes</span>
           </div>
         </div>
       </div>
