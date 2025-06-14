@@ -1,17 +1,29 @@
 
 import { useEffect, useState, useRef } from "react";
 import { MapPin, Bus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const BusMap = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState("firayalal");
   const [busLocation, setBusLocation] = useState([23.391768, 85.382955] as [number, number]);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const polylineRef = useRef<any>(null);
 
   // Fixed coordinates for the locations
-  const centralCampus = [23.413359, 85.441085] as [number, number];
+  const bitMesra = [23.413359, 85.441085] as [number, number];
   const initialBusLocation = [23.391768, 85.382955] as [number, number];
-  const northCampus = [23.370177, 85.324825] as [number, number];
+  
+  // Destination options with coordinates
+  const destinations = {
+    firayalal: { name: "Firayalal", coords: [23.370177, 85.324825] as [number, number] },
+    doranda: { name: "Doranda", coords: [23.344167, 85.309722] as [number, number] },
+    sujataChowk: { name: "Sujata Chowk", coords: [23.354722, 85.335278] as [number, number] }
+  };
+
+  const currentDestination = destinations[selectedDestination as keyof typeof destinations];
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -59,52 +71,7 @@ const BusMap = () => {
           attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mapInstanceRef.current);
 
-        // Add route polyline
-        const routePath = [centralCampus, initialBusLocation, northCampus];
-        L.polyline(routePath, {
-          color: '#3b82f6',
-          weight: 4,
-          opacity: 0.8
-        }).addTo(mapInstanceRef.current);
-
-        // Add start marker (Central Campus)
-        L.marker(centralCampus)
-          .addTo(mapInstanceRef.current)
-          .bindPopup('<div><h3>Central Campus</h3><p>Starting Point</p></div>');
-
-        // Add destination marker (North Campus)
-        L.marker(northCampus)
-          .addTo(mapInstanceRef.current)
-          .bindPopup('<div><h3>North Campus</h3><p>Destination</p></div>');
-
-        // Create custom bus icon
-        const busIcon = L.divIcon({
-          html: `
-            <div style="
-              background: #3b82f6;
-              width: 30px;
-              height: 30px;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 3px solid white;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            ">
-              <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
-          `,
-          className: 'custom-bus-icon',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        });
-
-        // Add bus marker
-        L.marker(busLocation, { icon: busIcon })
-          .addTo(mapInstanceRef.current)
-          .bindPopup('<div><h3>Bus Location</h3><p>Currently moving towards North Campus</p><p>ETA: ~15 minutes</p></div>');
+        updateMapForDestination(L);
 
         console.log('Map initialization complete');
         setMapLoaded(true);
@@ -125,6 +92,82 @@ const BusMap = () => {
     };
   }, []);
 
+  const updateMapForDestination = async (L: any) => {
+    if (!mapInstanceRef.current) return;
+
+    // Clear existing markers and polyline
+    markersRef.current.forEach(marker => mapInstanceRef.current.removeLayer(marker));
+    if (polylineRef.current) {
+      mapInstanceRef.current.removeLayer(polylineRef.current);
+    }
+    markersRef.current = [];
+
+    // Add route polyline
+    const routePath = [bitMesra, initialBusLocation, currentDestination.coords];
+    polylineRef.current = L.polyline(routePath, {
+      color: '#3b82f6',
+      weight: 4,
+      opacity: 0.8
+    }).addTo(mapInstanceRef.current);
+
+    // Add start marker (Bit Mesra)
+    const startMarker = L.marker(bitMesra)
+      .addTo(mapInstanceRef.current)
+      .bindPopup('<div><h3>Bit Mesra</h3><p>Starting Point</p></div>');
+    markersRef.current.push(startMarker);
+
+    // Add destination marker
+    const destMarker = L.marker(currentDestination.coords)
+      .addTo(mapInstanceRef.current)
+      .bindPopup(`<div><h3>${currentDestination.name}</h3><p>Destination</p></div>`);
+    markersRef.current.push(destMarker);
+
+    // Create custom bus icon
+    const busIcon = L.divIcon({
+      html: `
+        <div style="
+          background: #3b82f6;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 3px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        ">
+          <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+      `,
+      className: 'custom-bus-icon',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+
+    // Add bus marker
+    const busMarker = L.marker(busLocation, { icon: busIcon })
+      .addTo(mapInstanceRef.current)
+      .bindPopup(`<div><h3>Bus Location</h3><p>Currently moving towards ${currentDestination.name}</p><p>ETA: ~15 minutes</p></div>`);
+    markersRef.current.push(busMarker);
+
+    // Reset bus location to initial position
+    setBusLocation(initialBusLocation);
+  };
+
+  // Update map when destination changes
+  useEffect(() => {
+    if (!mapLoaded) return;
+    
+    const updateMap = async () => {
+      const L = await import('leaflet');
+      updateMapForDestination(L);
+    };
+    
+    updateMap();
+  }, [selectedDestination, mapLoaded]);
+
   useEffect(() => {
     if (!mapLoaded || !mapInstanceRef.current) return;
 
@@ -134,7 +177,7 @@ const BusMap = () => {
     const moveBus = () => {
       setBusLocation(prev => {
         const [lat, lng] = prev;
-        const [targetLat, targetLng] = northCampus;
+        const [targetLat, targetLng] = currentDestination.coords;
         
         // Move 5% of the remaining distance towards destination
         const newLat = lat + (targetLat - lat) * 0.05;
@@ -146,7 +189,7 @@ const BusMap = () => {
 
     const interval = setInterval(moveBus, 5000);
     return () => clearInterval(interval);
-  }, [mapLoaded]);
+  }, [mapLoaded, currentDestination]);
 
   // Update bus marker position when busLocation changes
   useEffect(() => {
@@ -164,6 +207,21 @@ const BusMap = () => {
 
   return (
     <div className="space-y-4">
+      {/* Destination Selector */}
+      <div className="bg-card/30 p-4 rounded-md">
+        <h4 className="font-semibold mb-2">Select Destination</h4>
+        <Select value={selectedDestination} onValueChange={setSelectedDestination}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Choose your destination" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="firayalal">Firayalal</SelectItem>
+            <SelectItem value="doranda">Doranda</SelectItem>
+            <SelectItem value="sujataChowk">Sujata Chowk</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Leaflet Map */}
       <div 
         ref={mapRef}
@@ -185,7 +243,7 @@ const BusMap = () => {
           <MapPin className="h-5 w-5 text-primary mr-2" />
           <div>
             <p className="text-xs text-muted-foreground">Starting point</p>
-            <p className="text-sm">Central Campus</p>
+            <p className="text-sm">Bit Mesra</p>
           </div>
         </div>
         <div className="flex items-center bg-primary/20 p-3 rounded-md">
@@ -200,7 +258,7 @@ const BusMap = () => {
           <MapPin className="h-5 w-5 text-primary mr-2" />
           <div>
             <p className="text-xs text-muted-foreground">Destination</p>
-            <p className="text-sm">North Campus</p>
+            <p className="text-sm">{currentDestination.name}</p>
           </div>
         </div>
       </div>
@@ -211,6 +269,10 @@ const BusMap = () => {
           <div className="flex justify-between text-sm">
             <span>Current Position:</span>
             <span>{busLocation[0].toFixed(4)}, {busLocation[1].toFixed(4)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Route:</span>
+            <span>Bit Mesra → {currentDestination.name}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Status:</span>
