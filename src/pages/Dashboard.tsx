@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { QrCode, CreditCard, MapPin, BusFront, LogOut } from "lucide-react";
@@ -13,6 +14,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [paymentAmount, setPaymentAmount] = useState("");
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -34,6 +36,17 @@ const Dashboard = () => {
   };
   
   const handlePayment = async () => {
+    const amount = parseFloat(paymentAmount);
+    
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // In a real app, you would integrate with a payment gateway here
       // For now, we just simulate a successful payment
@@ -43,16 +56,17 @@ const Dashboard = () => {
         .from("payments")
         .insert({
           user_id: user?.id,
-          amount: 40,
+          amount: amount,
           status: "completed",
           date: new Date().toISOString(),
         });
       
       setShowPaymentConfirmation(true);
+      setPaymentAmount("");
       
       toast({
         title: "Payment Successful",
-        description: "Your ride has been booked for today!",
+        description: `Your ride has been booked for ₹${amount}!`,
       });
     } catch (error: any) {
       toast({
@@ -148,8 +162,14 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-2xl font-bold">₹40</p>
-                      <Button onClick={handlePayment} className="w-full">
+                      <Input
+                        type="number"
+                        placeholder="Enter Amount"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                        className="text-lg"
+                      />
+                      <Button onClick={handlePayment} className="w-full" disabled={!paymentAmount}>
                         <CreditCard className="mr-2 h-4 w-4" />
                         Pay for Today's Ride
                       </Button>
