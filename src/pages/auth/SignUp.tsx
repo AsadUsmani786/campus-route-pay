@@ -11,23 +11,12 @@ import { BusFront } from "lucide-react";
 const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (!username.trim()) {
       toast({
@@ -47,7 +36,6 @@ const SignUp = () => {
         options: {
           data: {
             username: username.trim(),
-            full_name: fullName.trim() || null,
           }
         }
       });
@@ -87,17 +75,6 @@ const SignUp = () => {
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-2">
               <Input
-                id="email"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-background/50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Input
                 id="username"
                 type="text"
                 placeholder="Username"
@@ -109,11 +86,12 @@ const SignUp = () => {
             </div>
             <div className="space-y-2">
               <Input
-                id="fullName"
-                type="text"
-                placeholder="Full Name (optional)"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="bg-background/50"
               />
             </div>
@@ -124,17 +102,6 @@ const SignUp = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-background/50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 className="bg-background/50"
               />
