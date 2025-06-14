@@ -1,18 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { MapPin, Bus } from "lucide-react";
 
-// Dynamic imports to handle potential SSR issues
-let MapContainer: any;
-let TileLayer: any;
-let Marker: any;
-let Popup: any;
-let Polyline: any;
-let L: any;
-
 const BusMap = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [busLocation, setBusLocation] = useState([23.391768, 85.382955] as [number, number]);
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
 
   // Fixed coordinates for the locations
   const centralCampus = [23.413359, 85.441085] as [number, number];
@@ -26,27 +18,19 @@ const BusMap = () => {
     { position: northCampus, name: "North Campus", type: "destination" }
   ];
 
-  // Polyline path connecting all stops
-  const routePath = [centralCampus, initialBusLocation, northCampus];
-
   useEffect(() => {
-    const loadLeaflet = async () => {
+    let map: any = null;
+    let busMarker: any = null;
+    
+    const initializeMap = async () => {
       try {
-        // Import leaflet and react-leaflet dynamically
-        const leafletModule = await import('leaflet');
-        const reactLeafletModule = await import('react-leaflet');
+        // Import Leaflet
+        const L = await import('leaflet');
         
-        L = leafletModule.default;
-        MapContainer = reactLeafletModule.MapContainer;
-        TileLayer = reactLeafletModule.TileLayer;
-        Marker = reactLeafletModule.Marker;
-        Popup = reactLeafletModule.Popup;
-        Polyline = reactLeafletModule.Polyline;
-
         // Import CSS
         await import('leaflet/dist/leaflet.css');
 
-        // Fix for default markers in react-leaflet
+        // Fix for default markers
         delete (L.Icon.Default.prototype as any)._getIconUrl;
         L.Icon.Default.mergeOptions({
           iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -54,22 +38,85 @@ const BusMap = () => {
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
         });
 
-        setMapLoaded(true);
+        if (mapRef.current && !map) {
+          // Initialize the map
+          map = L.map(mapRef.current).setView([23.391768, 85.382955], 13);
+
+          // Add tile layer
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(map);
+
+          // Add route polyline
+          const routePath = [centralCampus, initialBusLocation, northCampus];
+          L.polyline(routePath, {
+            color: '#3b82f6',
+            weight: 4,
+            opacity: 0.8
+          }).addTo(map);
+
+          // Add start marker (Central Campus)
+          L.marker(centralCampus)
+            .addTo(map)
+            .bindPopup('<div><h3>Central Campus</h3><p>Starting Point</p></div>');
+
+          // Add destination marker (North Campus)
+          L.marker(northCampus)
+            .addTo(map)
+            .bindPopup('<div><h3>North Campus</h3><p>Destination</p></div>');
+
+          // Create custom bus icon
+          const busIcon = L.divIcon({
+            html: `
+              <div style="
+                background: #3b82f6;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              ">
+                <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+            `,
+            className: 'custom-bus-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          });
+
+          // Add bus marker
+          busMarker = L.marker(busLocation, { icon: busIcon })
+            .addTo(map)
+            .bindPopup('<div><h3>Bus Location</h3><p>Currently moving towards North Campus</p><p>ETA: ~15 minutes</p></div>');
+
+          setMapLoaded(true);
+        }
       } catch (error) {
-        console.error('Failed to load leaflet:', error);
+        console.error('Failed to load map:', error);
       }
     };
 
-    loadLeaflet();
+    initializeMap();
+
+    return () => {
+      if (map) {
+        map.remove();
+        map = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
     if (!mapLoaded) return;
 
-    // Simulate bus movement along the route every 5 seconds
+    // Simulate bus movement
     const moveBus = () => {
       setBusLocation(prev => {
-        // Simple simulation: move slightly towards North Campus
         const [lat, lng] = prev;
         const [targetLat, targetLng] = northCampus;
         
@@ -85,62 +132,24 @@ const BusMap = () => {
     return () => clearInterval(interval);
   }, [mapLoaded]);
 
-  // Custom bus icon
-  const busIcon = mapLoaded ? new L.DivIcon({
-    html: `
-      <div style="
-        background: #3b82f6;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 3px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      ">
-        <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        </svg>
-      </div>
-    `,
-    className: 'custom-bus-icon',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
-  }) : null;
+  // Update bus marker position when busLocation changes
+  useEffect(() => {
+    const updateBusMarker = async () => {
+      if (mapLoaded && mapRef.current) {
+        const L = await import('leaflet');
+        const map = mapRef.current;
+        
+        // Find and update the bus marker
+        map.eachLayer((layer: any) => {
+          if (layer.options && layer.options.icon && layer.options.icon.options.className === 'custom-bus-icon') {
+            layer.setLatLng(busLocation);
+          }
+        });
+      }
+    };
 
-  // Custom stop icons
-  const startStopIcon = mapLoaded ? new L.DivIcon({
-    html: `
-      <div style="
-        background: #10b981;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      "></div>
-    `,
-    className: 'custom-stop-icon',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-  }) : null;
-
-  const destinationStopIcon = mapLoaded ? new L.DivIcon({
-    html: `
-      <div style="
-        background: #ef4444;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      "></div>
-    `,
-    className: 'custom-stop-icon',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-  }) : null;
+    updateBusMarker();
+  }, [busLocation, mapLoaded]);
 
   if (!mapLoaded) {
     return (
@@ -194,60 +203,14 @@ const BusMap = () => {
   return (
     <div className="space-y-4">
       {/* Leaflet Map */}
-      <div className="relative h-96 w-full overflow-hidden rounded-lg my-5">
-        <MapContainer
-          center={[23.391768, 85.382955]}
-          zoom={13}
-          className="h-full w-full rounded-lg"
-          style={{
-            background: '#1f2937',
-            filter: 'hue-rotate(180deg) invert(1)',
-          }}
-        >
-          <TileLayer
-            attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          {/* Route polyline */}
-          <Polyline
-            positions={routePath}
-            color="#3b82f6"
-            weight={4}
-            opacity={0.8}
-          />
-          
-          {/* Bus marker (current location) */}
-          <Marker position={busLocation} icon={busIcon}>
-            <Popup>
-              <div>
-                <h3 className="font-semibold">Bus Location</h3>
-                <p className="text-sm">Currently moving towards North Campus</p>
-                <p className="text-xs text-muted-foreground">ETA: ~15 minutes</p>
-              </div>
-            </Popup>
-          </Marker>
-          
-          {/* Stop markers */}
-          <Marker position={centralCampus} icon={startStopIcon}>
-            <Popup>
-              <div>
-                <h3 className="font-semibold">Central Campus</h3>
-                <p className="text-sm">Starting Point</p>
-              </div>
-            </Popup>
-          </Marker>
-          
-          <Marker position={northCampus} icon={destinationStopIcon}>
-            <Popup>
-              <div>
-                <h3 className="font-semibold">North Campus</h3>
-                <p className="text-sm">Destination</p>
-              </div>
-            </Popup>
-          </Marker>
-        </MapContainer>
-      </div>
+      <div 
+        ref={mapRef}
+        className="relative h-96 w-full overflow-hidden rounded-lg my-5"
+        style={{ 
+          minHeight: '400px',
+          background: '#f0f0f0'
+        }}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="flex items-center bg-card/30 p-3 rounded-md">
