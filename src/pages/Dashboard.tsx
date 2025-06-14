@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { QrCode, CreditCard, MapPin, BusFront, LogOut } from "lucide-react";
 import { PaymentHistory } from "@/components/PaymentHistory";
 import BusMap from "@/components/BusMap";
+import BusTimeTable from "@/components/BusTimeTable";
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -175,6 +175,9 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Add Bus Timetable */}
+            <BusTimeTable />
           </div>
         )}
         
