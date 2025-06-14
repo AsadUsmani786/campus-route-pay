@@ -22,10 +22,10 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
-      external: mode === 'development' ? [] : ['mapbox-gl'],
+      external: mode === 'development' ? [] : [],
     },
   },
   optimizeDeps: {
-    exclude: ['mapbox-gl'],
+    include: ['mapbox-gl'],
   },
 }));
