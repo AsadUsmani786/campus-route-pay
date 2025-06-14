@@ -25,7 +25,4 @@ export default defineConfig(({ mode }) => ({
       external: mode === 'development' ? [] : [],
     },
   },
-  optimizeDeps: {
-    include: ['mapbox-gl'],
-  },
 }));
