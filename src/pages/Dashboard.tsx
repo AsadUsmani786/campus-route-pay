@@ -9,6 +9,7 @@ import { QrCode, CreditCard, MapPin, BusFront, LogOut } from "lucide-react";
 import { PaymentHistory } from "@/components/PaymentHistory";
 import BusMap from "@/components/BusMap";
 import BusTimeTable from "@/components/BusTimeTable";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -16,6 +17,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [paymentAmount, setPaymentAmount] = useState("");
   const navigate = useNavigate();
+  
+  const { profile, loading: profileLoading } = useUserProfile(user?.id);
   
   useEffect(() => {
     const checkUser = async () => {
@@ -84,6 +87,8 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const displayName = profile?.username || user?.email?.split('@')[0];
   
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -140,7 +145,9 @@ const Dashboard = () => {
         {activeTab === "overview" && (
           <div className="grid gap-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold tracking-tight">Welcome, {user?.email?.split('@')[0]}</h2>
+              <h2 className="text-2xl font-bold tracking-tight">
+                Welcome, {profileLoading ? "..." : displayName}
+              </h2>
             </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
